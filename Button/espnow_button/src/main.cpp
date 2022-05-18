@@ -17,7 +17,61 @@ b. http://www.esploradores.com/practica-6-conexion-esp-now/
 
 
 const int BUTTON_PIN = 13;
-const int LED_PIN = 5;
+const int BUTTON_STICKC_PIN = 37;
+const int LED_LOLIND32_PIN = 5;
+const int LED_DOIT_PIN = 2;
+const int LED_LOLIN32_PIN = 22;
+const int LED_STICKC_PIN = 10;
+
+bool state_button = true;
+bool state_button_stickc = true;
+
+void setupComponents(){
+	pinMode(LED_LOLIND32_PIN, OUTPUT);
+	pinMode(LED_DOIT_PIN, OUTPUT);
+	pinMode(LED_LOLIN32_PIN, OUTPUT);
+	pinMode(LED_STICKC_PIN, OUTPUT);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+	pinMode(BUTTON_STICKC_PIN, INPUT);
+}
+
+void receive(String s) {
+ if(s == "1"){
+    digitalWrite(LED_LOLIND32_PIN, HIGH);
+		digitalWrite(LED_LOLIN32_PIN, HIGH);
+		digitalWrite(LED_STICKC_PIN, HIGH);
+		digitalWrite(LED_DOIT_PIN, LOW);
+    Serial.println("RECV Button OFF");
+  } else if (s == "0") {
+    digitalWrite(LED_LOLIND32_PIN, LOW);
+		digitalWrite(LED_LOLIN32_PIN, LOW);
+		digitalWrite(LED_STICKC_PIN, LOW);
+		digitalWrite(LED_DOIT_PIN, HIGH);
+    Serial.println("RECV Button ON");
+  }
+}
+
+void sendData(uint8_t counter);
+void send() {
+  if(state_button != digitalRead(BUTTON_PIN)) {
+		digitalWrite(LED_LOLIND32_PIN, digitalRead(BUTTON_PIN));
+		digitalWrite(LED_LOLIN32_PIN, digitalRead(BUTTON_PIN));
+		digitalWrite(LED_STICKC_PIN, digitalRead(BUTTON_STICKC_PIN));
+		digitalWrite(LED_DOIT_PIN, !digitalRead(BUTTON_PIN));
+    state_button = digitalRead(BUTTON_PIN);
+  	sendData(int(state_button));
+  }
+	  if(state_button_stickc != digitalRead(BUTTON_STICKC_PIN)) {
+		digitalWrite(LED_LOLIND32_PIN, digitalRead(BUTTON_STICKC_PIN));
+		digitalWrite(LED_LOLIN32_PIN, digitalRead(BUTTON_STICKC_PIN));
+		digitalWrite(LED_STICKC_PIN, digitalRead(BUTTON_STICKC_PIN));
+		digitalWrite(LED_DOIT_PIN, !digitalRead(BUTTON_STICKC_PIN));
+    state_button_stickc = digitalRead(BUTTON_STICKC_PIN);
+  	sendData(int(state_button_stickc));
+  }
+}
+
+
 
 // Global copy of slave / peer device
 // for broadcasts the addr needs to be ff:ff:ff:ff:ff:ff
@@ -30,7 +84,6 @@ esp_now_peer_info_t slave;
 
 bool manageSlave();
 void deletePeer();
-bool state_button = true;
 
 // Init ESP Now with fallback
 void InitESPNow() {
@@ -142,7 +195,6 @@ void deletePeer() {
 	}
 }
 
-
 // send data
 void sendData(uint8_t counter) {
 	uint8_t data = counter;
@@ -194,14 +246,7 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
 	Serial.print("Last Packet Recv Data: "); Serial.println(*data);
 	Serial.println("");
   String s = String(*data);
-
-  if(s == "1"){
-    digitalWrite(LED_PIN, HIGH);
-    Serial.println("RECV Button OFF");
-  } else if (s == "0") {
-    digitalWrite(LED_PIN, LOW);
-    Serial.println("RECV Button ON");
-  }
+	receive(s); 
 }
 
 
@@ -210,10 +255,7 @@ void setup() {
 	Serial.begin(115200);
 	Serial.println("ESPNow Multicast example");
 
-  pinMode(LED_PIN, OUTPUT);
-	digitalWrite(LED_PIN, HIGH);
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
-
+	setupComponents();
 	//Set device in STA mode to begin with
 	Serial.println("Wifi mode STA");
 	WiFi.mode(WIFI_STA);
@@ -233,10 +275,5 @@ void setup() {
 
 uint8_t count = 0;
 void loop() {
-  if(state_button != digitalRead(BUTTON_PIN)) {
-		
-    digitalWrite(LED_PIN, digitalRead(BUTTON_PIN));
-    state_button = digitalRead(BUTTON_PIN);
-  	sendData(int(state_button));
-  }
+	send();
 }
